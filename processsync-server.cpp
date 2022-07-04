@@ -53,7 +53,8 @@ int MainThread() {
 
 	SIMPLEMSG msg;
 	while (GetRemoteMessage(&msg)){
-		std::cout << (int)msg.msgcode << std::endl;
+		std::cout <<"MSG"<< (int)msg.msgcode << std::endl;
+		std::cout <<"LPARAM"<< msg.lparam << std::endl;
 	}
 	return EXIT_SUCCESS;
 }
