@@ -23,7 +23,7 @@ public:
 void* servershareaddr = nullptr;
 int MainThread();
 int main() {
-	gRiseEvent=CreateEventA(NULL, TRUE, FALSE, "ServerRiseEvent");
+	gRiseEvent=CreateEventA(NULL, TRUE, FALSE, "ServerRiseEvent");//其实可转化为句柄值
 	memshare = new ShareMemory("Process-sync");
 	servershareaddr =memshare->OpenShareMem(NULL, 4096);
 	auto mainthread= std::thread(&MainThread);
