@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32526.322
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "进程间同步-server", "进程间同步-server.vcxproj", "{23B47432-D2B3-4293-B184-A82AA4BB972C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "进程间同步-client", "..\进程间同步-client\进程间同步-client.vcxproj", "{45EED905-5244-416D-B627-92DD1C296A8E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{23B47432-D2B3-4293-B184-A82AA4BB972C}.Debug|x64.ActiveCfg = Debug|x64
+		{23B47432-D2B3-4293-B184-A82AA4BB972C}.Debug|x64.Build.0 = Debug|x64
+		{23B47432-D2B3-4293-B184-A82AA4BB972C}.Debug|x86.ActiveCfg = Debug|Win32
+		{23B47432-D2B3-4293-B184-A82AA4BB972C}.Debug|x86.Build.0 = Debug|Win32
+		{23B47432-D2B3-4293-B184-A82AA4BB972C}.Release|x64.ActiveCfg = Release|x64
+		{23B47432-D2B3-4293-B184-A82AA4BB972C}.Release|x64.Build.0 = Release|x64
+		{23B47432-D2B3-4293-B184-A82AA4BB972C}.Release|x86.ActiveCfg = Release|Win32
+		{23B47432-D2B3-4293-B184-A82AA4BB972C}.Release|x86.Build.0 = Release|Win32
+		{45EED905-5244-416D-B627-92DD1C296A8E}.Debug|x64.ActiveCfg = Debug|x64
+		{45EED905-5244-416D-B627-92DD1C296A8E}.Debug|x64.Build.0 = Debug|x64
+		{45EED905-5244-416D-B627-92DD1C296A8E}.Debug|x86.ActiveCfg = Debug|Win32
+		{45EED905-5244-416D-B627-92DD1C296A8E}.Debug|x86.Build.0 = Debug|Win32
+		{45EED905-5244-416D-B627-92DD1C296A8E}.Release|x64.ActiveCfg = Release|x64
+		{45EED905-5244-416D-B627-92DD1C296A8E}.Release|x64.Build.0 = Release|x64
+		{45EED905-5244-416D-B627-92DD1C296A8E}.Release|x86.ActiveCfg = Release|Win32
+		{45EED905-5244-416D-B627-92DD1C296A8E}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {87FE608E-178B-444C-8FF9-F46FE09D326F}
+	EndGlobalSection
+EndGlobal
