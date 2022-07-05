@@ -183,9 +183,8 @@ inline void MessageManager::DispatchMsg(SIMPLEMSG& msg) {//处理收到的消息
 inline void MessageManager::SetServerEvent(SIMPLEMSG msg) {
 	if (b_m_ServerCallBackEvents) {
 		SetEvent(m_ServerCallBackEvent);//已经被打开过的时间
-	}
-	else {
-		HANDLE msgevent = OpenEventA(EVENT_ALL_ACCESS, FALSE, "ServerRiseEvent");
-		SetEvent(msgevent);
+	}else {
+		m_ServerCallBackEvent = OpenEventA(EVENT_ALL_ACCESS, FALSE, "ServerRiseEvent");
+		SetEvent(m_ServerCallBackEvent);
 	}
 }
