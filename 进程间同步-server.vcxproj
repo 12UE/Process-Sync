@@ -132,6 +132,7 @@
     <ClCompile Include="ShareMemory.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MessageManager.h" />
     <ClInclude Include="ShareMemory.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
