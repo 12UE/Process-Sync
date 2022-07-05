@@ -184,6 +184,7 @@ inline void MessageManager::SetServerEvent(SIMPLEMSG msg) {
 	if (b_m_ServerCallBackEvents) {
 		SetEvent(m_ServerCallBackEvent);//已经被打开过的时间
 	}else {
+		b_m_ServerCallBackEvents = true;
 		m_ServerCallBackEvent = OpenEventA(EVENT_ALL_ACCESS, FALSE, "ServerRiseEvent");
 		SetEvent(m_ServerCallBackEvent);
 	}
