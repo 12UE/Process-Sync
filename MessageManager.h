@@ -51,6 +51,7 @@ private:
 	void operator= (const MessageManager&) = delete;
 	std::string makename(int number) { return "MessageManager" + std::to_string(number); }
 public:
+	DWORD64 tempvalue;
 	virtual ~MessageManager() noexcept;
 	void Constrsuct(ManagerType type);
 	void SetManagerCharater(ManagerType type);
@@ -126,7 +127,7 @@ inline void MessageManager::ListenThread()
 {
 	SIMPLEMSG msg;
 	while (GetRemoteMessage(&msg)) {
-		std::cout << "收到消息" << std::endl;
+		//std::cout << "收到消息" << std::endl;
 		DispatchMsg(msg);
 	}
 }
@@ -143,7 +144,7 @@ inline bool MessageManager::SendLocalMessage(SIMPLEMSG msg) {
 		WaitForSingleObject(callbackevt, INFINITE);
 		ResetEvent(callbackevt);
 		memshare->ReadShareMem(ServerShareMemory, &msg, sizeof(SIMPLEMSG));
-		std::cout << "收到返回值：" << msg.m_Returndata << std::endl;
+		tempvalue = msg.m_Returndata;
 	}
 	return true;
 }
@@ -183,7 +184,8 @@ inline void MessageManager::DispatchMsg(SIMPLEMSG& msg) {//处理收到的消息
 inline void MessageManager::SetServerEvent(SIMPLEMSG msg) {
 	if (b_m_ServerCallBackEvents) {
 		SetEvent(m_ServerCallBackEvent);//已经被打开过的时间
-	}else {
+	}
+	else {
 		b_m_ServerCallBackEvents = true;
 		m_ServerCallBackEvent = OpenEventA(EVENT_ALL_ACCESS, FALSE, "ServerRiseEvent");
 		SetEvent(m_ServerCallBackEvent);

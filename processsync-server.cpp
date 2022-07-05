@@ -3,8 +3,17 @@
 MessageManager &messageManager = MessageManager::GetInstance();
 int a = 3;
 UDWORD Foo(LPARAM lp, WPARAM wp) {
-	std::cout << "time: " << clock() << std::endl;
-	return a++;
+	DWORD _time = clock();
+	static float lasttime = 0;
+	static int fpscounter = 0;
+	if (_time - lasttime > 1000) {
+		a = fpscounter;
+		fpscounter = 0;
+		lasttime = _time;
+	}else {
+		fpscounter++;
+	}
+	return a;
 }
 int main() {
 	SIMPLEMSG msg;
