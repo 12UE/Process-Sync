@@ -1,6 +1,7 @@
 #pragma once
 #include<Windows.h>
 #include<unordered_map>
+#include"SimpleThreadPool.h"
 #define SHARED_MEMORY_SIZE 8192
 #define MAX_WAITINGTIME 1000
 #if defined _WIN64
@@ -50,6 +51,7 @@ private:
 	MessageManager(MessageManager&&) = delete;
 	void operator= (const MessageManager&) = delete;
 	std::string makename(int number) { return "MessageManager" + std::to_string(number); }
+	std::threadpool* m_threadpool;
 public:
 	DWORD64 tempvalue;
 	virtual ~MessageManager() noexcept;
@@ -68,20 +70,18 @@ public:
 };
 inline HANDLE MessageManager::GetClientCallBackHandle(SIMPLEMSG msg) {
 	auto it = m_ClientCallBackEvents.find(msg.msgcode);
-	if (it == m_ClientCallBackEvents.end()) {
+	if (it != m_ClientCallBackEvents.end()) {
+		return it->second;
+	}else {
 		if (m_IsServer) {
 			HANDLE clientevent = OpenEventA(EVENT_ALL_ACCESS, FALSE, makename((int)msg.msgcode).c_str());
 			m_ClientCallBackEvents.insert(std::make_pair(msg.msgcode, clientevent));
 			return clientevent;
-		}
-		else {
+		}else {
 			HANDLE thisevent = CreateEventA(NULL, TRUE, FALSE, makename((int)msg.msgcode).c_str());
 			m_ClientCallBackEvents.insert(std::make_pair(msg.msgcode, thisevent));
 			return thisevent;
 		}
-	}
-	else {
-		return it->second;
 	}
 }
 inline void MessageManager::Constrsuct(ManagerType type)
@@ -90,12 +90,12 @@ inline void MessageManager::Constrsuct(ManagerType type)
 	ServerShareMemory = memshare->OpenShareMem(NULL, SHARED_MEMORY_SIZE);
 	if (type == ManagerType::Server) {
 		gRiseEvent = CreateEventA(NULL, TRUE, FALSE, "ServerRiseEvent");//其实可转化为句柄值
-		m_Thread = std::thread(&MessageManager::ListenThread, this);
-		SetThreadPriority(m_Thread.native_handle(), THREAD_PRIORITY_HIGHEST);
-		m_Thread.detach();
+		m_threadpool = new std::threadpool(4);
+		for (int i = 0; i < 4; i++) {
+			m_threadpool->commit(std::mem_fn(&MessageManager::ListenThread), this);
+		}
 		m_IsServer = true;
-	}
-	else {
+	}else {
 		gRiseEvent = OpenEventA(EVENT_ALL_ACCESS, false, "ServerRiseEvent");
 		m_IsServer = false;
 	}
@@ -110,10 +110,12 @@ inline MessageManager::~MessageManager() {
 	if (m_IsServer) {
 		CloseHandle(m_Thread.native_handle());
 		CloseHandle(gRiseEvent);
+		delete m_threadpool;
 	}
 	for (auto& it : m_ClientCallBackEvents) {//释放回调映射
 		CloseHandle(it.second);
 	}
+	
 }
 
 inline void MessageManager::SetManagerCharater(ManagerType type) {
@@ -127,15 +129,13 @@ inline void MessageManager::ListenThread()
 {
 	SIMPLEMSG msg;
 	while (GetRemoteMessage(&msg)) {
-		//std::cout << "收到消息" << std::endl;
 		DispatchMsg(msg);
 	}
 }
 inline bool MessageManager::SendLocalMessage(SIMPLEMSG msg) {
 	if (m_IsServer) {
 		memshare->WriteShareMem(ServerShareMemory, &msg, sizeof(msg));
-	}
-	else {
+	}else {
 		msg.isCallBack = true;
 		HANDLE callbackevt = GetClientCallBackHandle(msg);
 		msg.callbackeventname = makename((int)msg.msgcode).c_str();
@@ -151,6 +151,8 @@ inline bool MessageManager::SendLocalMessage(SIMPLEMSG msg) {
 inline bool MessageManager::PostLocalMessage(SIMPLEMSG msg) {
 	msg.isCallBack = false;
 	memshare->WriteShareMem(ServerShareMemory, &msg, sizeof(msg));
+	SetServerEvent(msg);
+	return true;
 }
 inline bool MessageManager::GetRemoteMessage(SIMPLEMSG* msg) {
 	if (m_IsServer) {
@@ -167,27 +169,24 @@ inline void MessageManager::BindMsg(SIMPLEMSG rawmsg, std::function<UDWORD(LPARA
 inline void MessageManager::DispatchMsg(SIMPLEMSG& msg) {//处理收到的消息
 	auto result = m_MsgMap.find(msg.msgcode);
 	if (result != m_MsgMap.end()) {
-
 		if (msg.isCallBack) {
 			auto ret = (*result).second(msg.lparam, msg.wparam);
 			msg.m_Returndata = ret;
 			memshare->WriteShareMem(ServerShareMemory, &msg, sizeof(SIMPLEMSG));
 			SetEvent(GetClientCallBackHandle(msg));
-		}
-	}
-	else {
-		if (msg.isCallBack) {
-			SetEvent(GetClientCallBackHandle(msg));
+		}else {
+			(*result).second(msg.lparam, msg.wparam);
 		}
 	}
 }
 inline void MessageManager::SetServerEvent(SIMPLEMSG msg) {
 	if (b_m_ServerCallBackEvents) {
 		SetEvent(m_ServerCallBackEvent);//已经被打开过的时间
-	}
-	else {
+	}else {
 		b_m_ServerCallBackEvents = true;
 		m_ServerCallBackEvent = OpenEventA(EVENT_ALL_ACCESS, FALSE, "ServerRiseEvent");
-		SetEvent(m_ServerCallBackEvent);
+		if (m_ServerCallBackEvent != INVALID_HANDLE_VALUE) {
+			SetEvent(m_ServerCallBackEvent);
+		}
 	}
 }

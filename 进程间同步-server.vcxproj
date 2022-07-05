@@ -152,6 +152,7 @@
   <ItemGroup>
     <ClInclude Include="MessageManager.h" />
     <ClInclude Include="ShareMemory.h" />
+    <ClInclude Include="SimpleThreadPool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -32,5 +32,8 @@
     <ClInclude Include="MessageManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="SimpleThreadPool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
