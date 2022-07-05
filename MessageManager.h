@@ -26,7 +26,8 @@ public:
 	LPVOID	  lpReserved;//保留参数
 	bool      isCallBack;
 	std::string callbackeventname;
-	BYTE	  m_Returndata[4096];
+	//BYTE	  m_Returndata[4096];
+	DWORD64	  m_Returndata;
 	SIMPLEMSG() = default;
 	SIMPLEMSG(MsgType msg) {
 		msgcode = msg;
@@ -77,7 +78,8 @@ inline HANDLE MessageManager::GetClientCallBackHandle(SIMPLEMSG msg) {
 			m_ClientCallBackEvents.insert(std::make_pair(msg.msgcode, thisevent));
 			return thisevent;
 		}
-	}else {
+	}
+	else {
 		return it->second;
 	}
 }
@@ -134,12 +136,14 @@ inline bool MessageManager::SendLocalMessage(SIMPLEMSG msg) {
 	}
 	else {
 		msg.isCallBack = true;
-		HANDLE callbackevt= GetClientCallBackHandle(msg);
+		HANDLE callbackevt = GetClientCallBackHandle(msg);
 		msg.callbackeventname = makename((int)msg.msgcode).c_str();
 		memshare->WriteShareMem(ServerShareMemory, &msg, sizeof(msg));
 		SetServerEvent(msg);
 		WaitForSingleObject(callbackevt, INFINITE);
-		std::cout << "收到回调通知" << std::endl;
+		ResetEvent(callbackevt);
+		memshare->ReadShareMem(ServerShareMemory, &msg, sizeof(SIMPLEMSG));
+		std::cout << "收到返回值：" << msg.m_Returndata << std::endl;
 	}
 	return true;
 }
@@ -162,8 +166,11 @@ inline void MessageManager::BindMsg(SIMPLEMSG rawmsg, std::function<UDWORD(LPARA
 inline void MessageManager::DispatchMsg(SIMPLEMSG& msg) {//处理收到的消息
 	auto result = m_MsgMap.find(msg.msgcode);
 	if (result != m_MsgMap.end()) {
-		auto ret = (*result).second(msg.lparam, msg.wparam);
+
 		if (msg.isCallBack) {
+			auto ret = (*result).second(msg.lparam, msg.wparam);
+			msg.m_Returndata = ret;
+			memshare->WriteShareMem(ServerShareMemory, &msg, sizeof(SIMPLEMSG));
 			SetEvent(GetClientCallBackHandle(msg));
 		}
 	}
