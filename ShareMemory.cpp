@@ -83,7 +83,7 @@ int ShareMemory::WriteShareMem(void* dest, void*src, unsigned size)
 	WaitForSingleObject(m_semaphore, INFINITE);
 	//memset(dest, 0, writeCount);//首先要先清空内存
 	memcpy(dest, src, writeCount);
-	ReleaseSemaphore(m_semaphore, 1, NULL);
+	//ReleaseSemaphore(m_semaphore, 1, NULL);
 	//FlushViewOfFile(m_shareMemAddress, writeCount);
 	return writeCount;
 }

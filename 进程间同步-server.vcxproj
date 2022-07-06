@@ -83,6 +83,8 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -102,6 +104,8 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -123,6 +127,8 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,6 +148,8 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

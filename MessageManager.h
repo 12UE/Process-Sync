@@ -20,6 +20,10 @@ enum class MsgType :int {
 	EXIT,
 	PRINT,
 };
+enum Eventdefs {
+	SERVER_RISE,
+	THREAD_RISE,
+};
 class SIMPLEMSG {
 public:
 	MsgType   msgcode;//消息代码
@@ -39,28 +43,26 @@ class MessageManager {
 private:
 	MessageManager() = default;
 	bool  m_IsServer = false;
-	HANDLE m_event = INVALID_HANDLE_VALUE;
-	HANDLE gRiseEvent;
+	bool m_isWorking = true;
+	HANDLE m_Events[2];
 	ShareMemory* memshare;
 	void* ServerShareMemory;
 	std::unordered_map<MsgType, HANDLE> m_ClientCallBackEvents;
 	HANDLE m_ServerCallBackEvent;
 	bool b_m_ServerCallBackEvents = false;
 	HANDLE GetClientCallBackHandle(SIMPLEMSG msg);
-	std::thread m_Thread;
 	MessageManager(const MessageManager&) = delete;
 	MessageManager(MessageManager&&) = delete;
 	void operator= (const MessageManager&) = delete;
 	std::string makename(int number) { return "MessageManager" + std::to_string(number); }
-	std::threadpool* m_threadpool;
 	PTP_WORK m_pwork;
+	std::thread m_managerThread;
 public:
 	DWORD64 tempvalue;
 	virtual ~MessageManager() noexcept;
 	void Constrsuct(ManagerType type);
 	void SetManagerCharater(ManagerType type);
-	bool IsServer();
-	void ListenThread();
+	void ManagerThread();
 	bool SendLocalMessage(SIMPLEMSG msg);
 	bool PostLocalMessage(SIMPLEMSG MSG);
 	bool GetRemoteMessage(SIMPLEMSG* msg);
@@ -92,13 +94,17 @@ inline void MessageManager::Constrsuct(ManagerType type)
 	memshare = new ShareMemory("Process-sync");
 	ServerShareMemory = memshare->OpenShareMem(NULL, SHARED_MEMORY_SIZE);
 	if (type == ManagerType::Server) {
-		gRiseEvent = CreateEventA(NULL, TRUE, FALSE, "ServerRiseEvent");//其实可转化为句柄值
+		m_IsServer = true;
+		m_Events[SERVER_RISE] = CreateEventA(NULL, TRUE, FALSE, "ServerRiseEvent");//其实可转化为句柄值
+		m_Events[THREAD_RISE] = CreateEventA(NULL, TRUE, FALSE, "ThreadNotifyEvent");//
 		m_pwork = CreateThreadpoolWork((PTP_WORK_CALLBACK)ThreadFunc, this, NULL);
 		SubmitThreadpoolWork(m_pwork);
-		m_IsServer = true;
+		m_managerThread = std::thread(&MessageManager::ManagerThread, this);
+		SetThreadPriority(m_managerThread.native_handle(), THREAD_PRIORITY_HIGHEST);
+		m_managerThread.detach();
 		std::cout << "服务器初始化完成" << std::endl;
 	}else {
-		gRiseEvent = OpenEventA(EVENT_ALL_ACCESS, false, "ServerRiseEvent");
+		m_Events[SERVER_RISE] = OpenEventA(EVENT_ALL_ACCESS, false, "ServerRiseEvent");
 		m_IsServer = false;
 	}
 	
@@ -108,12 +114,13 @@ inline MessageManager& MessageManager::GetInstance() {
 	return msgmg;
 }
 
+
 inline MessageManager::~MessageManager() {
 	delete memshare;
 	if (m_IsServer) {
-		CloseHandle(m_Thread.native_handle());
-		CloseHandle(gRiseEvent);
-		delete m_threadpool;
+		CloseHandle(m_Events[SERVER_RISE]);
+		WaitForThreadpoolWorkCallbacks(m_pwork, FALSE);
+		CloseThreadpoolWork(m_pwork);
 	}
 	for (auto& it : m_ClientCallBackEvents) {//释放回调映射
 		CloseHandle(it.second);
@@ -124,17 +131,16 @@ inline MessageManager::~MessageManager() {
 inline void MessageManager::SetManagerCharater(ManagerType type) {
 	m_IsServer = (type == ManagerType::Server);
 }
-
-inline bool MessageManager::IsServer() {
-	return m_IsServer;
-}
-inline void MessageManager::ListenThread()
-{
-	SIMPLEMSG msg;
-	while (GetRemoteMessage(&msg)) {
-		DispatchMsg(msg);
+inline void MessageManager::ManagerThread(){
+#pragma loop( hint_parallel(4) )
+	while (m_IsServer&& m_isWorking){
+		WaitForSingleObject(m_Events[SERVER_RISE], INFINITE);
+		SetEvent(m_Events[THREAD_RISE]);
+		SubmitThreadpoolWork(m_pwork);
 	}
 }
+
+
 inline bool MessageManager::SendLocalMessage(SIMPLEMSG msg) {
 	if (m_IsServer) {
 		memshare->WriteShareMem(ServerShareMemory, &msg, sizeof(msg));
@@ -175,6 +181,7 @@ inline void MessageManager::DispatchMsg(SIMPLEMSG& msg) {//处理收到的消息
 			msg.m_Returndata = ret;
 			memshare->WriteShareMem(ServerShareMemory, &msg, sizeof(SIMPLEMSG));
 			SetEvent(GetClientCallBackHandle(msg));
+			
 		}else {
 			(*result).second(msg.lparam, msg.wparam);
 		}
@@ -192,13 +199,13 @@ inline void MessageManager::SetServerEvent(SIMPLEMSG msg) {
 	}
 }
 
-inline void __stdcall MessageManager::ThreadFunc(PTP_CALLBACK_INSTANCE pInstance, void* p, PTP_WORK pWork)
-{
+inline void __stdcall MessageManager::ThreadFunc(PTP_CALLBACK_INSTANCE pInstance, void* p, PTP_WORK pWork){
 	MessageManager* pthis = (MessageManager*)p;
-	WaitForSingleObject(pthis->gRiseEvent, INFINITE);
-	ResetEvent(pthis->gRiseEvent);
+	WaitForMultipleObjects(2, pthis->m_Events, TRUE, INFINITE);
+	ResetEvent(pthis->m_Events[SERVER_RISE]);
 	SIMPLEMSG msg;
 	pthis->GetRemoteMessage(&msg);
 	pthis->DispatchMsg(msg);
-	SubmitThreadpoolWork(pthis->m_pwork);
+	
+	SetEventWhenCallbackReturns(pInstance, pthis->m_Events[THREAD_RISE]);
 }
