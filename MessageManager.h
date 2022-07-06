@@ -53,6 +53,7 @@ private:
 	void operator= (const MessageManager&) = delete;
 	std::string makename(int number) { return "MessageManager" + std::to_string(number); }
 	std::threadpool* m_threadpool;
+	PTP_WORK m_pwork;
 public:
 	DWORD64 tempvalue;
 	virtual ~MessageManager() noexcept;
@@ -68,6 +69,7 @@ public:
 	std::unordered_map<MsgType, std::function<UDWORD(LPARAM, WPARAM)>> m_MsgMap;//消息映射
 	static MessageManager& GetInstance();
 	void SetServerEvent(SIMPLEMSG msg);
+	static void WINAPI ThreadFunc(PTP_CALLBACK_INSTANCE pInstance, void* p, PTP_WORK pWork);
 };
 inline HANDLE MessageManager::GetClientCallBackHandle(SIMPLEMSG msg) {
 	auto it = m_ClientCallBackEvents.find(msg.msgcode);
@@ -91,15 +93,15 @@ inline void MessageManager::Constrsuct(ManagerType type)
 	ServerShareMemory = memshare->OpenShareMem(NULL, SHARED_MEMORY_SIZE);
 	if (type == ManagerType::Server) {
 		gRiseEvent = CreateEventA(NULL, TRUE, FALSE, "ServerRiseEvent");//其实可转化为句柄值
-		m_threadpool = new std::threadpool(4);
-		for (int i = 0; i < 4; i++) {
-			m_threadpool->commit(std::mem_fn(&MessageManager::ListenThread), this);
-		}
+		m_pwork = CreateThreadpoolWork((PTP_WORK_CALLBACK)ThreadFunc, this, NULL);
+		SubmitThreadpoolWork(m_pwork);
 		m_IsServer = true;
+		std::cout << "服务器初始化完成" << std::endl;
 	}else {
 		gRiseEvent = OpenEventA(EVENT_ALL_ACCESS, false, "ServerRiseEvent");
 		m_IsServer = false;
 	}
+	
 }
 inline MessageManager& MessageManager::GetInstance() {
 	static MessageManager msgmg;
@@ -157,8 +159,6 @@ inline bool MessageManager::PostLocalMessage(SIMPLEMSG msg) {
 }
 inline bool MessageManager::GetRemoteMessage(SIMPLEMSG* msg) {
 	if (m_IsServer) {
-		WaitForSingleObject(gRiseEvent, INFINITE);//等待接收到信号发出
-		ResetEvent(gRiseEvent);
 		memshare->ReadShareMem(ServerShareMemory, msg, sizeof(SIMPLEMSG));
 		return (*msg).msgcode != MsgType::EXIT;
 	}
@@ -190,4 +190,15 @@ inline void MessageManager::SetServerEvent(SIMPLEMSG msg) {
 			SetEvent(m_ServerCallBackEvent);
 		}
 	}
+}
+
+inline void __stdcall MessageManager::ThreadFunc(PTP_CALLBACK_INSTANCE pInstance, void* p, PTP_WORK pWork)
+{
+	MessageManager* pthis = (MessageManager*)p;
+	WaitForSingleObject(pthis->gRiseEvent, INFINITE);
+	ResetEvent(pthis->gRiseEvent);
+	SIMPLEMSG msg;
+	pthis->GetRemoteMessage(&msg);
+	pthis->DispatchMsg(msg);
+	SubmitThreadpoolWork(pthis->m_pwork);
 }
