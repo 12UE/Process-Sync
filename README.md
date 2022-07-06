@@ -4,7 +4,7 @@
 * 作者：随风
 * 日期：2022.5.20
 ### 结构
-![IMAGE] (https://github.com/12UE/Process-Sync/blob/master/结构.png)
+![image](https://github.com/12UE/Process-Sync/blob/master/结构.png)
 ### 性能测试
 
-![IMAGE] (https://github.com/12UE/Process-Sync/blob/master/结构.png)
+![image](https://github.com/12UE/Process-Sync/blob/master/性能.png)
