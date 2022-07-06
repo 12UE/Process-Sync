@@ -1,5 +1,6 @@
 #pragma once
 #include<Windows.h>
+#include"ShareMemory.h"
 #include<unordered_map>
 #include"SimpleThreadPool.h"
 #define SHARED_MEMORY_SIZE 8192

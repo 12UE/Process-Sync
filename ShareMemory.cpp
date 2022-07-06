@@ -5,7 +5,7 @@ ShareMemory::ShareMemory(const std::string shareMemName, bool createFile)
 {
 	m_isCreateFile = createFile;
 	m_shareMemName = shareMemName;
-	m_semaphore = CreateSemaphoreA(NULL, 1, 1, NULL);
+
 	m_fileMapping = INVALID_HANDLE_VALUE;
 	m_shareMemAddress = NULL;
 }
@@ -81,10 +81,10 @@ int ShareMemory::WriteShareMem(void* dest, void*src, unsigned size)
 		writeCount = size;
 	//利用semaphore进行保护映射的区域（同一进程的不同线程调用时候才进行保护,防止多个线程同时写入）
 	WaitForSingleObject(m_semaphore, INFINITE);
-	memset(dest, 0, m_shareMemSize);//首先要先清空内存
+	//memset(dest, 0, writeCount);//首先要先清空内存
 	memcpy(dest, src, writeCount);
 	ReleaseSemaphore(m_semaphore, 1, NULL);
-	FlushViewOfFile(m_shareMemAddress, writeCount);
+	//FlushViewOfFile(m_shareMemAddress, writeCount);
 	return writeCount;
 }
 
