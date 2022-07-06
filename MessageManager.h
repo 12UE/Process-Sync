@@ -136,7 +136,6 @@ inline void MessageManager::ManagerThread(){
 	while (m_IsServer&& m_isWorking){
 		WaitForSingleObject(m_Events[SERVER_RISE], INFINITE);
 		SetEvent(m_Events[THREAD_RISE]);
-		SubmitThreadpoolWork(m_pwork);
 	}
 }
 
@@ -206,6 +205,6 @@ inline void __stdcall MessageManager::ThreadFunc(PTP_CALLBACK_INSTANCE pInstance
 	SIMPLEMSG msg;
 	pthis->GetRemoteMessage(&msg);
 	pthis->DispatchMsg(msg);
-	
 	SetEventWhenCallbackReturns(pInstance, pthis->m_Events[THREAD_RISE]);
+	SubmitThreadpoolWork(pthis->m_pwork);
 }
