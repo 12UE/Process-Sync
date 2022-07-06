@@ -1,13 +1,12 @@
 #include "ShareMemory.h"
 
 
-ShareMemory::ShareMemory(const std::string shareMemName, bool createFile)
-{
+ShareMemory::ShareMemory(const std::string shareMemName, bool createFile){
 	m_isCreateFile = createFile;
 	m_shareMemName = shareMemName;
-
 	m_fileMapping = INVALID_HANDLE_VALUE;
 	m_shareMemAddress = NULL;
+	::InitializeCriticalSection(&m_cs);
 }
 
 
@@ -17,16 +16,11 @@ ShareMemory::~ShareMemory()
 	{
 		UnmapViewOfFile(m_shareMemAddress);
 	}
-	
-	if (m_semaphore != NULL)
-	{
-		CloseHandle(m_semaphore);
-	}
-	
 	if (m_fileMapping != NULL)
 	{
 		CloseHandle(m_fileMapping);
 	}
+	::DeleteCriticalSection(&m_cs);
 }
 
 /*
@@ -79,12 +73,9 @@ int ShareMemory::WriteShareMem(void* dest, void*src, unsigned size)
 	int writeCount = (int)m_shareMemAddress + m_shareMemSize - (int)dest;
 	if (writeCount > size)
 		writeCount = size;
-	//利用semaphore进行保护映射的区域（同一进程的不同线程调用时候才进行保护,防止多个线程同时写入）
-	WaitForSingleObject(m_semaphore, INFINITE);
-	//memset(dest, 0, writeCount);//首先要先清空内存
+	::EnterCriticalSection(&m_cs);
 	memcpy(dest, src, writeCount);
-	//ReleaseSemaphore(m_semaphore, 1, NULL);
-	//FlushViewOfFile(m_shareMemAddress, writeCount);
+	::LeaveCriticalSection(&m_cs);
 	return writeCount;
 }
 
@@ -101,8 +92,7 @@ int ShareMemory::ReadShareMem(void* src, void*dest, unsigned size)
 
 bool ShareMemory::CheckAddress(void* addr)
 {
-	if (((int)addr < (int)m_shareMemAddress) || ((int)addr > (int)m_shareMemAddress + m_shareMemSize))
-	{
+	if (((int)addr < (int)m_shareMemAddress) || ((int)addr > (int)m_shareMemAddress + m_shareMemSize)){
 		return false;
 	}
 	return true;

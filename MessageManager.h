@@ -94,6 +94,8 @@ inline void MessageManager::Constrsuct(ManagerType type)
 	memshare = new ShareMemory("Process-sync");
 	ServerShareMemory = memshare->OpenShareMem(NULL, SHARED_MEMORY_SIZE);
 	if (type == ManagerType::Server) {
+		SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);//设置当前进程为最高优先级
+		SetProcessPriorityBoost(GetCurrentProcess(), FALSE);//禁止改变进程优先级
 		m_IsServer = true;
 		m_Events[SERVER_RISE] = CreateEventA(NULL, TRUE, FALSE, "ServerRiseEvent");//其实可转化为句柄值
 		m_Events[THREAD_RISE] = CreateEventA(NULL, TRUE, FALSE, "ThreadNotifyEvent");//
@@ -133,7 +135,7 @@ inline void MessageManager::SetManagerCharater(ManagerType type) {
 }
 inline void MessageManager::ManagerThread(){
 #pragma loop( hint_parallel(4) )
-	while (m_IsServer&& m_isWorking){
+	for (;;) {
 		WaitForSingleObject(m_Events[SERVER_RISE], INFINITE);
 		SetEvent(m_Events[THREAD_RISE]);
 	}
